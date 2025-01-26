@@ -217,11 +217,6 @@ function App() {
       // Birden fazla nokta kullanımını engelle
       if ((log.weight.match(/\./g) || []).length > 1) return;
     }
-    
-    // Tekrarlar için sadece sayı kontrolü
-    if (field === 'reps') {
-      if (!/^\d*$/.test(log.reps)) return;
-    }
 
     setExerciseLogs(prev => ({
       ...prev,
@@ -235,6 +230,21 @@ function App() {
   const getExerciseLog = (dayId, exerciseName) => {
     const key = `${dayId}-${exerciseName}`;
     return exerciseLogs[key] || { weight: '', reps: '' };
+  };
+
+  const getLastWorkoutData = (dayId, exerciseName) => {
+    // Geçmiş kayıtları bu gün için filtrele ve tarihe göre sırala
+    const dayHistory = Object.entries(workoutHistory)
+      .filter(([key]) => key.startsWith(dayId))
+      .sort((a, b) => new Date(b[0].split('-')[1]) - new Date(a[0].split('-')[1]));
+
+    // En son kayıt varsa onu döndür
+    if (dayHistory.length > 0) {
+      const lastWorkout = dayHistory[0][1];
+      return lastWorkout.logs[exerciseName] || { weight: '-', reps: '-' };
+    }
+
+    return { weight: '-', reps: '-' };
   };
 
   const completeWorkout = async (dayId) => {
@@ -311,6 +321,7 @@ function App() {
       <div className="exercise-list">
         {exercises.map((exercise, index) => {
           const log = getExerciseLog(dayId, exercise.name);
+          const lastWorkout = getLastWorkoutData(dayId, exercise.name);
           
           return (
             <div key={index} className="exercise-item">
@@ -347,6 +358,11 @@ function App() {
                         { ...log, reps: e.target.value }, 'reps')}
                       className="log-input"
                     />
+                  </div>
+                  <div className="last-workout-data">
+                    <p>Son antrenman:</p>
+                    <span>Ağırlık: {lastWorkout.weight} kg</span>
+                    <span>Tekrar: {lastWorkout.reps}</span>
                   </div>
                 </div>
                 {exercise.videoUrl && (
